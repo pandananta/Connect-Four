@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<style>
+.wrapper {
+	display: inline-block;
+	text-align: center;
+}
+.board {
+	background-color: yellow;
+	border-left: 25px solid blue;
+	border-right: 25px solid blue;
+	height: auto;
+	display: inline-block;
+	margin-bottom: 20px;
+}
+.cell { 
+	background-color: white;
+	height: 60px;
+	width: 60px;
+	border-radius: 50%;
+	margin: 5px;
+	display: inline-block;
+}
+.selectable {
+	cursor: pointer;
+}
+.red {
+	background-color: red;
+}
+
+.black {
+	background-color: black;
+}
+
+</style>
+
+<title>Connect Four</title>
+</head>
+<body>
+	<div class="wrapper">
+		<div class="board"></div>
+		<div>
+			<button class="restart">Start New Game</button>
+		</div>
+	</div>
+</body>
+</html>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript" src="connectfour.js"></script>

@@ -1,6 +1,7 @@
 
 (function($){
 	var RUBRIC = [],
+		WINNINGPATHSIZE = 4,
 		BOARDWIDTH = 7,
 		BOARDHEIGHT = 6,
 		BOARD = [],
@@ -24,18 +25,37 @@
 	}
 
 	var directionalRubric = function (cellNum, offset) {
-		//some of these cell combinations won't exist, but that is okay for our use case. 
-		//in v2, it would be good to return only real paths + allow for variable winning path size e.g. 5 in a row
-		var dr = [];
-		dr.push([cellNum, cellNum + offset, cellNum + 2*offset, cellNum + 3*offset]);
-		dr.push([cellNum - offset, cellNum, cellNum + offset, cellNum + 2*offset]);
-		dr.push([cellNum - 2*offset, cellNum - offset, cellNum, cellNum + offset]);
-		dr.push([cellNum - 3*offset, cellNum - 2*offset, cellNum - offset, cellNum]);
+		var dr = [],
+			cell,
+			path,
+			maxDistance = WINNINGPATHSIZE-1,
+			minPoint = cellNum - (maxDistance * offset);
+
+		for (var start = minPoint; start <= cellNum; start += offset) {
+			path = [];
+			for (var i = 0; i < WINNINGPATHSIZE; i += 1) {
+				cell = start + (i * offset);
+
+				if (isInBounds(cell) && (i === 0 || i === WINNINGPATHSIZE-1 || !isEdge(cell))) {
+					path.push(cell);
+				} else {
+					break;
+				}
+			}
+			if (path.length === WINNINGPATHSIZE) dr.push(path);
+		}
 		return dr;
 	}
 
+	var isEdge = function (cell) {
+		return cell%BOARDWIDTH === 0 || cell%BOARDWIDTH === BOARDWIDTH-1;
+	}
+
+	var isInBounds = function (cell) {
+		return cell >= 0 && cell < BOARDWIDTH*BOARDHEIGHT;
+	}
+
 	var hasWinningPath = function (cellNum, cellList) {
-		console.log(cellList);
 		$.each( RUBRIC[cellNum], function( index, path ) {
 		 	$.each( path, function( i, cell ) {
 		 		console.log(cell);
@@ -70,7 +90,7 @@
 	        		rowNum = Math.floor(cellNum/BOARDWIDTH),
 	        		colNum = cellNum%BOARDWIDTH;
 
-	        		console.log(rowNum, colNum);
+	        		console.log(cellNum);
 
         		if (!gameOver && columnHeight[colNum] == rowNum) {
         			node.addClass(player ? 'red' : 'black').removeClass('selectable');
@@ -99,6 +119,7 @@
 	$('.restart').on('click', initialize);
 
 	generateRubric();
+	console.log(RUBRIC);
 	initialize();
 })(jQuery)
 

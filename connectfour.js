@@ -71,8 +71,13 @@
 		$.each( RUBRIC[cellNum], function( index, path ) {
 		 	$.each( path, function( i, cell ) {
 	     	if($.inArray(cell, cellList) == -1) return false;
-		     	if (i == path.length-1) {
+		    
+		    if (i == path.length-1) {
+		    	//the player has all the cells in this winning path
 					gameOver = true;
+					$.map( path, function( val) {
+					  $('[data-cell=' + val + ']').addClass('winning');
+					});
 				}
 	     	return true;
 	  	});

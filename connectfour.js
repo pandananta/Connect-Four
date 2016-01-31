@@ -9,45 +9,55 @@
 		RED = 1,
 		SCORECARDS = {},
 		columnHeight = [],
-		player = BLACK,
-		gameOver = false;
+		player,
+		gameOver;
 
 	var generateRubric = function () {
 		//for every cell, find all winning paths in every direction
 		for (var i = 0; i < BOARDWIDTH * BOARDHEIGHT; i++) { 
-			var vertical = directionalRubric(i, BOARDWIDTH), 
-				horizontal = directionalRubric(i, 1),
-				diagonalUp = directionalRubric(i, BOARDWIDTH+1),
-				diagonalDown = directionalRubric(i, BOARDWIDTH-1);
+			var verticalPaths = directionalRubric(i, BOARDWIDTH), 
+				horizontalPaths = directionalRubric(i, 1),
+				diagonalUpPaths = directionalRubric(i, BOARDWIDTH+1),
+				diagonalDownPaths = directionalRubric(i, BOARDWIDTH-1);
 
-			RUBRIC[i] = $.merge( $.merge( $.merge( vertical, horizontal ), diagonalUp ), diagonalDown);
+			RUBRIC[i] = $.merge( $.merge( $.merge( verticalPaths, horizontalPaths ), diagonalUpPaths ), diagonalDownPaths);
 		}
 	}
 
 	var directionalRubric = function (cellNum, offset) {
 		var dr = [],
 			cell,
+			edgeCount,
 			path,
 			maxDistance = WINNINGPATHSIZE-1,
 			minPoint = cellNum - (maxDistance * offset);
 
 		for (var start = minPoint; start <= cellNum; start += offset) {
 			path = [];
+			edgeCount = 0;
 			for (var i = 0; i < WINNINGPATHSIZE; i += 1) {
 				cell = start + (i * offset);
+				if (isEdge(cell)) {
+					edgeCount += 1;
+				}
 
-				if (isInBounds(cell) && (i === 0 || i === WINNINGPATHSIZE-1 || !isEdge(cell))) {
+				if (isInBounds(cell)) {
 					path.push(cell);
 				} else {
 					break;
 				}
 			}
-			if (path.length === WINNINGPATHSIZE) dr.push(path);
+
+			if (path.length === WINNINGPATHSIZE && (edgeCount < 2 || edgeCount == WINNINGPATHSIZE)) {
+				//check the edge count to account for left-to-right or right-to-left crossover 
+				dr.push(path);
+			}
 		}
 		return dr;
 	}
 
 	var isEdge = function (cell) {
+		//returns true if the cell is on the leftmost or rightmost column
 		return cell%BOARDWIDTH === 0 || cell%BOARDWIDTH === BOARDWIDTH-1;
 	}
 
@@ -56,70 +66,73 @@
 	}
 
 	var hasWinningPath = function (cellNum, cellList) {
+		//compare the player's scorecard to the rubric for the cell that was just claimed. 
+		//if the scorecard contains any of those winning paths, the player has won
 		$.each( RUBRIC[cellNum], function( index, path ) {
 		 	$.each( path, function( i, cell ) {
-		 		console.log(cell);
-		     	if($.inArray(cell, cellList) == -1) return false;
+	     	if($.inArray(cell, cellList) == -1) return false;
 		     	if (i == path.length-1) {
-					console.log("OMGGGGGGG YOU WON");
 					gameOver = true;
 				}
-		     	return true;
-		  	});
+	     	return true;
+	  	});
 		});
-		return false;
+		return gameOver;
 	}
 
-	var initialize = function() {
+	var setMessage = function (message, color) {
+		$('.notification').text(message).css('color', color ? color : '');
+	}
+
+	var initialize = function () {
 		var $newRow = $('<div class="row">'),
 			$newCell;
+		gameOver = false;
+		player = BLACK;
 		SCORECARDS[BLACK] = [];
 		SCORECARDS[RED] = [];
+		setMessage("Your turn, Player 0");
 		$('.board').empty();
 		for (var i = 0; i < BOARDWIDTH * BOARDHEIGHT; i++) { 
 			BOARD[i] = -1;
 			$newCell = $('<div class="cell">');
 			$newCell.attr('data-cell', i);
 			if (i < BOARDWIDTH) {
-	        	$newCell.addClass('selectable');
-	        	columnHeight[i] = 0;
-	        }
+        	$newCell.addClass('selectable');
+        	columnHeight[i] = 0;
+        }
 			$newCell.on('click', function(e) {
-	        	var node = $(e.target)
-	        		cellNum = $(e.target).data("cell"), 
-	        		rowNum = Math.floor(cellNum/BOARDWIDTH),
-	        		colNum = cellNum%BOARDWIDTH;
+      	var node = $(e.target)
+      		cellNum = $(e.target).data("cell"), 
+      		rowNum = Math.floor(cellNum/BOARDWIDTH),
+      		colNum = cellNum%BOARDWIDTH;
 
-	        		console.log(cellNum);
+    		if (!gameOver && columnHeight[colNum] == rowNum) {
+    			node.addClass(player ? 'red' : 'black').removeClass('selectable');
+    			SCORECARDS[player].push(cellNum);
+    			columnHeight[colNum] += 1;
 
-        		if (!gameOver && columnHeight[colNum] == rowNum) {
-        			node.addClass(player ? 'red' : 'black').removeClass('selectable');
-        			SCORECARDS[player].push(cellNum);
-        			columnHeight[colNum] += 1;
-
-        			if (SCORECARDS[player].length > 3) {
-        				if (hasWinningPath(cellNum, SCORECARDS[player])) {
-        					console.log("OMGGGGGGG YOU WON");
-        				}
-        			}
-
-        			$('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
-        			player = 1 - player;
-        		}
-	        });
-	        $newRow.append($newCell);
-	        if (i%BOARDWIDTH === BOARDWIDTH-1)  {
-        		$('.board').prepend($newRow);
-        		$newRow = $('<div class="row">');
-	        }
+    			if (SCORECARDS[player].length > 3 && hasWinningPath(cellNum, SCORECARDS[player])) {
+  					setMessage("Player " + player + " has won!!!!", player ? 'red' : 'black');
+  					$('.selectable').removeClass('selectable');
+    			} else {
+    				$('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
+	    			player = 1 - player;
+	    			setMessage("Your turn, Player " + player, player ? 'red' : 'black');
+    			}
+    		}
+      });
+      $newRow.append($newCell);
+      if (i%BOARDWIDTH === BOARDWIDTH-1)  {
+    		$('.board').prepend($newRow);
+    		$newRow = $('<div class="row">');
+      }
 		}
-	    
 	};
 
 	$('.restart').on('click', initialize);
 
 	generateRubric();
-	console.log(RUBRIC);
 	initialize();
 })(jQuery)
 

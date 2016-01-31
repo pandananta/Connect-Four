@@ -113,6 +113,7 @@
       		colNum = cellNum%BOARDWIDTH;
 
     		if (!gameOver && columnHeight[colNum] == rowNum) {
+    			$('.instructions').text('');
     			node.addClass(player ? 'red' : 'black').removeClass('selectable');
     			SCORECARDS[player].push(cellNum);
     			columnHeight[colNum] += 1;
@@ -125,6 +126,8 @@
 	    			player = 1 - player;
 	    			setMessage("Your turn, Player " + player, player ? 'red' : 'black');
     			}
+    		} else if (columnHeight[colNum] !== rowNum) {
+    			$('.instructions').text("Please select a valid cell");
     		}
       });
       $newRow.append($newCell);

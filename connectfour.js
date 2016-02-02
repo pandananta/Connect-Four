@@ -1,16 +1,17 @@
 
 (function($){
-  var RUBRIC = [],
+  var RUBRIC = [], 
     WINNINGPATHSIZE = 4,
     BOARDWIDTH = 7,
     BOARDHEIGHT = 6,
-    BOARD = [],
     BLACK = 0, 
-    RED = 1,
-    SCORECARDS = {},
+    RED = 1;
+
+  var scorecards = {},
     columnHeight = [],
-    player,
-    gameOver;
+    currentPlayer,
+    gameOver,
+    winningPath;
 
   var generateRubric = function () {
     //for every cell, find all winning paths in every direction
@@ -66,24 +67,19 @@
     return cell >= 0 && cell < BOARDWIDTH*BOARDHEIGHT;
   }
 
-  //ugh refactor this
   var hasWinningPath = function (cellNum, cellList) {
     //compare the player's scorecard to the rubric for the cell that was just claimed. 
     //if the player's scorecard contains any of those winning paths, the player has won
     $.each( RUBRIC[cellNum], function( index, path ) {
       $.each( path, function( i, cell ) {
-        if ($.inArray(cell, cellList) === -1) {
-          return false;
-        }
+        if ($.inArray(cell, cellList) === -1) { return false; }
         
         if (i === path.length-1) {
-          //the player has all the cells in this winning path
+          //hooray! the player has all the cells in this winning path
           gameOver = true;
-          $.map( path, function( val) {
-            $('[data-cell=' + val + ']').addClass('winning');
-          });
+          winningPath = path;
+          return false;
         }
-        return true;
       });
     });
     return gameOver;
@@ -93,47 +89,45 @@
     $('.notification').text(message).css('color', color ? color : '');
   }
 
-  //break this into separate methods
-  var initialize = function () {
+  var move = function(node) {
+    var cellNum = node.data("cell"), 
+      rowNum = Math.floor(cellNum/BOARDWIDTH),
+      colNum = cellNum%BOARDWIDTH;
+
+    if (!gameOver && columnHeight[colNum] === rowNum) {
+      $('.instructions').text('');
+      node.addClass(currentPlayer ? 'red' : 'black').removeClass('selectable');
+      scorecards[currentPlayer].push(cellNum);
+      columnHeight[colNum] += 1;
+
+      if (scorecards[currentPlayer].length > 3 && hasWinningPath(cellNum, scorecards[currentPlayer])) {
+        $.map(winningPath, function(val) {
+          $(('[data-cell=' + val + ']')).addClass('winning');
+        });
+        setMessage("Player " + currentPlayer + " has won!!!!", currentPlayer ? 'red' : 'black');
+        $('.selectable').removeClass('selectable');
+      } else {
+        $('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
+        currentPlayer = 1 - currentPlayer;
+        setMessage("Your turn, Player " + currentPlayer, currentPlayer ? 'red' : 'black');
+      }
+    } else if (columnHeight[colNum] !== rowNum) {
+      $('.instructions').text("Please select a valid cell");
+    }
+  }
+
+  var initializeBoard = function () {
     var $newRow = $('<div class="row">'),
       $newCell;
-    gameOver = false;
-    player = BLACK;
-    SCORECARDS[BLACK] = [];
-    SCORECARDS[RED] = [];
-    setMessage("Your turn, Player 0");
     $('.board').empty();
     for (var i = 0; i < BOARDWIDTH * BOARDHEIGHT; i++) { 
-      BOARD[i] = -1;
-      $newCell = $('<div class="cell">');
-      $newCell.attr('data-cell', i);
+      $newCell = $('<div class="cell">').attr('data-cell', i);
       if (i < BOARDWIDTH) {
         $newCell.addClass('selectable');
         columnHeight[i] = 0;
       }
       $newCell.on('click', function(e) {
-        var node = $(e.target)
-          cellNum = $(e.target).data("cell"), 
-          rowNum = Math.floor(cellNum/BOARDWIDTH),
-          colNum = cellNum%BOARDWIDTH;
-
-        if (!gameOver && columnHeight[colNum] === rowNum) {
-          $('.instructions').text('');
-          node.addClass(player ? 'red' : 'black').removeClass('selectable');
-          SCORECARDS[player].push(cellNum);
-          columnHeight[colNum] += 1;
-
-          if (SCORECARDS[player].length > 3 && hasWinningPath(cellNum, SCORECARDS[player])) {
-            setMessage("Player " + player + " has won!!!!", player ? 'red' : 'black');
-            $('.selectable').removeClass('selectable');
-          } else {
-            $('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
-            player = 1 - player;
-            setMessage("Your turn, Player " + player, player ? 'red' : 'black');
-          }
-        } else if (columnHeight[colNum] !== rowNum) {
-          $('.instructions').text("Please select a valid cell");
-        }
+        move($(e.target));
       });
       $newRow.append($newCell);
       if (i%BOARDWIDTH === BOARDWIDTH-1)  {
@@ -141,6 +135,16 @@
         $newRow = $('<div class="row">');
       }
     }
+  }
+
+  var initialize = function () {
+    gameOver = false;
+    currentPlayer = BLACK;
+    scorecards[BLACK] = [];
+    scorecards[RED] = [];
+    winningPath = [];
+    setMessage("Your turn, Player " + currentPlayer);
+    initializeBoard();
   };
 
   $('.restart').on('click', initialize);

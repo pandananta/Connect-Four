@@ -15,17 +15,17 @@
   var generateRubric = function () {
     //for every cell, find all winning paths in every direction
     for (var i = 0; i < BOARDWIDTH * BOARDHEIGHT; i++) { 
-      var verticalPaths = directionalRubric(i, BOARDWIDTH), 
-        horizontalPaths = directionalRubric(i, 1),
-        diagonalUpPaths = directionalRubric(i, BOARDWIDTH+1),
-        diagonalDownPaths = directionalRubric(i, BOARDWIDTH-1);
+      var verticalPaths = generateDirectionalRubric(i, BOARDWIDTH), 
+        horizontalPaths = generateDirectionalRubric(i, 1),
+        diagonalUpPaths = generateDirectionalRubric(i, BOARDWIDTH+1),
+        diagonalDownPaths = generateDirectionalRubric(i, BOARDWIDTH-1);
 
       RUBRIC[i] = $.merge( $.merge( $.merge( verticalPaths, horizontalPaths ), diagonalUpPaths ), diagonalDownPaths);
     }
   }
 
-  var directionalRubric = function (cellNum, offset) {
-    var dr = [],
+  var generateDirectionalRubric = function (cellNum, offset) {
+    var directionalRubric = [],
       cell,
       edgeCount,
       path,
@@ -38,6 +38,7 @@
       for (var i = 0; i < WINNINGPATHSIZE; i += 1) {
         cell = start + (i * offset);
         if (isEdge(cell)) {
+          //keep track of edges to account for paths that go out of bounds on the left or right
           edgeCount += 1;
         }
 
@@ -48,12 +49,12 @@
         }
       }
 
-      if (path.length === WINNINGPATHSIZE && (edgeCount < 2 || edgeCount == WINNINGPATHSIZE)) {
-        //check the edge count to account for left-to-right or right-to-left crossover 
-        dr.push(path);
+      if (path.length === WINNINGPATHSIZE && (edgeCount < 2 || edgeCount === WINNINGPATHSIZE)) {
+        //a valid path can either have no edge cells, one edge cell, or all edge cells
+        directionalRubric.push(path);
       }
     }
-    return dr;
+    return directionalRubric;
   }
 
   var isEdge = function (cell) {
@@ -65,14 +66,17 @@
     return cell >= 0 && cell < BOARDWIDTH*BOARDHEIGHT;
   }
 
+  //ugh refactor this
   var hasWinningPath = function (cellNum, cellList) {
     //compare the player's scorecard to the rubric for the cell that was just claimed. 
-    //if the scorecard contains any of those winning paths, the player has won
+    //if the player's scorecard contains any of those winning paths, the player has won
     $.each( RUBRIC[cellNum], function( index, path ) {
       $.each( path, function( i, cell ) {
-        if($.inArray(cell, cellList) == -1) return false;
+        if ($.inArray(cell, cellList) === -1) {
+          return false;
+        }
         
-        if (i == path.length-1) {
+        if (i === path.length-1) {
           //the player has all the cells in this winning path
           gameOver = true;
           $.map( path, function( val) {
@@ -89,6 +93,7 @@
     $('.notification').text(message).css('color', color ? color : '');
   }
 
+  //break this into separate methods
   var initialize = function () {
     var $newRow = $('<div class="row">'),
       $newCell;
@@ -112,7 +117,7 @@
           rowNum = Math.floor(cellNum/BOARDWIDTH),
           colNum = cellNum%BOARDWIDTH;
 
-        if (!gameOver && columnHeight[colNum] == rowNum) {
+        if (!gameOver && columnHeight[colNum] === rowNum) {
           $('.instructions').text('');
           node.addClass(player ? 'red' : 'black').removeClass('selectable');
           SCORECARDS[player].push(cellNum);

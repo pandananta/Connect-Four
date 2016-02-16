@@ -151,9 +151,11 @@
         columnHeight[i] = 0;
         eligibleMoves.push(i);
       }
-      $newCell.on('click', function(e) {
-        move($(e.target));
-      });
+      if (gameMode === PLAYMODE) {
+        $newCell.on('click', function(e) {
+          move($(e.target));
+        });
+      }
       $newRow.append($newCell);
       if (i%BOARDWIDTH === BOARDWIDTH-1)  {
         $('.board').prepend($newRow);
@@ -175,13 +177,13 @@
   };
 
   var initializePlayMode= function () {
-    initialize();
     gameMode = PLAYMODE;
+    initialize();
   }
 
   var initializeViewOnlyMode = function () {
-    initialize();
     gameMode = VIEWONlYMODE;
+    initialize();
     gamePlayLoop = setInterval(makeRandomMove, 600);
   }
 

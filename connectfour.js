@@ -14,7 +14,8 @@
     eligibleMoves,
     currentPlayer,
     gameOver,
-    winningPath, 
+    winningPath,
+    gameMode = PLAYMODE, 
     gamePlayLoop;
 
   var generateRubric = function () {
@@ -115,6 +116,7 @@
         setMessage("Player " + currentPlayer + " has won!!!!", currentPlayer ? 'red' : 'black');
         $('.selectable').removeClass('selectable');
       } else if (scorecards[BLACK].length + scorecards[RED].length === BOARDWIDTH*BOARDHEIGHT) {
+        setMessage("Cat's Game :(");
         gameOver = true;
       }else {
         $('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
@@ -123,6 +125,18 @@
       }
     } else if (columnHeight[colNum] !== rowNum) {
       $('.instructions').text("Please select a valid cell");
+    }
+  }
+
+  var makeRandomMove = function () {
+    if (gameOver || gameMode === PLAYMODE) {
+      clearInterval(gamePlayLoop);
+      gamePlayLoop = null;
+      gameMode === VIEWONlYMODE ? setTimeout(initializeViewOnlyMode, 2000) : '';
+    } else {
+      var cellNum = eligibleMoves[Math.floor(Math.random()*eligibleMoves.length)],
+        $node = $(('[data-cell=' + cellNum + ']'));
+      move($node);
     }
   }
 
@@ -160,23 +174,19 @@
     initializeBoard();
   };
 
-  var initializeComputer = function () {
+  var initializePlayMode= function () {
     initialize();
+    gameMode = PLAYMODE;
+  }
+
+  var initializeViewOnlyMode = function () {
+    initialize();
+    gameMode = VIEWONlYMODE;
     gamePlayLoop = setInterval(makeRandomMove, 600);
   }
 
-  var makeRandomMove = function () {
-    if (gameOver) {
-      clearInterval(gamePlayLoop);
-      gamePlayLoop = null;
-      setTimeout(initializeComputer, 2000);
-    }
-    var cellNum = eligibleMoves[Math.floor(Math.random()*eligibleMoves.length)];
-    $(('[data-cell=' + cellNum + ']')).trigger('click');
-  }
-
-  $('.restart').on('click', initialize);
-  $('.restartComputer').on('click', initializeComputer);
+  $('.restart').on('click', initializePlayMode);
+  $('.restartComputer').on('click', initializeViewOnlyMode);
 
   generateRubric();
   initialize();

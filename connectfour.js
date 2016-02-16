@@ -5,13 +5,17 @@
     BOARDWIDTH = 7,
     BOARDHEIGHT = 6,
     BLACK = 0, 
-    RED = 1;
+    RED = 1,
+    PLAYMODE = 0,
+    VIEWONlYMODE = 1;
 
   var scorecards = {},
-    columnHeight = [],
+    columnHeight,
+    eligibleMoves,
     currentPlayer,
     gameOver,
-    winningPath;
+    winningPath, 
+    gamePlayLoop;
 
   var generateRubric = function () {
     //for every cell, find all winning paths in every direction
@@ -99,6 +103,10 @@
       node.addClass(currentPlayer ? 'red' : 'black').removeClass('selectable');
       scorecards[currentPlayer].push(cellNum);
       columnHeight[colNum] += 1;
+      eligibleMoves = eligibleMoves.filter(function(elem){return elem != cellNum;});
+      if (isInBounds(cellNum + BOARDWIDTH)) {
+        eligibleMoves.push(cellNum + BOARDWIDTH);
+      }
 
       if (scorecards[currentPlayer].length > 3 && hasWinningPath(cellNum, scorecards[currentPlayer])) {
         $.map(winningPath, function(val) {
@@ -106,7 +114,9 @@
         });
         setMessage("Player " + currentPlayer + " has won!!!!", currentPlayer ? 'red' : 'black');
         $('.selectable').removeClass('selectable');
-      } else {
+      } else if (scorecards[BLACK].length + scorecards[RED].length === BOARDWIDTH*BOARDHEIGHT) {
+        gameOver = true;
+      }else {
         $('[data-cell=' + (cellNum + BOARDWIDTH) + ']').addClass('selectable');
         currentPlayer = 1 - currentPlayer;
         setMessage("Your turn, Player " + currentPlayer, currentPlayer ? 'red' : 'black');
@@ -125,6 +135,7 @@
       if (i < BOARDWIDTH) {
         $newCell.addClass('selectable');
         columnHeight[i] = 0;
+        eligibleMoves.push(i);
       }
       $newCell.on('click', function(e) {
         move($(e.target));
@@ -143,11 +154,29 @@
     scorecards[BLACK] = [];
     scorecards[RED] = [];
     winningPath = [];
+    eligibleMoves = [];
+    columnHeight = [];
     setMessage("Your turn, Player " + currentPlayer);
     initializeBoard();
   };
 
+  var initializeComputer = function () {
+    initialize();
+    gamePlayLoop = setInterval(makeRandomMove, 600);
+  }
+
+  var makeRandomMove = function () {
+    if (gameOver) {
+      clearInterval(gamePlayLoop);
+      gamePlayLoop = null;
+      setTimeout(initializeComputer, 2000);
+    }
+    var cellNum = eligibleMoves[Math.floor(Math.random()*eligibleMoves.length)];
+    $(('[data-cell=' + cellNum + ']')).trigger('click');
+  }
+
   $('.restart').on('click', initialize);
+  $('.restartComputer').on('click', initializeComputer);
 
   generateRubric();
   initialize();

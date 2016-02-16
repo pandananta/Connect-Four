@@ -132,7 +132,7 @@
     if (gameOver || gameMode === PLAYMODE) {
       clearInterval(gamePlayLoop);
       gamePlayLoop = null;
-      gameMode === VIEWONlYMODE ? setTimeout(initializeViewOnlyMode, 2000) : '';
+      gameMode === VIEWONlYMODE ? setTimeout(initializeViewOnlyMode, 1500) : '';
     } else {
       var cellNum = eligibleMoves[Math.floor(Math.random()*eligibleMoves.length)],
         $node = $(('[data-cell=' + cellNum + ']'));
